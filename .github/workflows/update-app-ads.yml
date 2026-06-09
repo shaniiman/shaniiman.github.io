@@ -1,0 +1,46 @@
+name: Update app-ads.txt
+
+on:
+  schedule:
+    # Runs every 7 days at 03:00 UTC on Monday
+    # To change interval, use cron syntax: https://crontab.guru
+    # Every 3 days:  "0 3 */3 * *"
+    # Every 14 days: "0 3 */14 * *"
+    # Every 30 days: "0 3 1 * *"
+    - cron: "0 3 * * 1"
+
+  # Also allow manual trigger from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit the updated file back
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run updater script
+        run: node scripts/update-app-ads.js
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add app-ads.txt
+
+          # Only commit if the file actually changed
+          if git diff --cached --quiet; then
+            echo "app-ads.txt is already up to date. Nothing to commit."
+          else
+            git commit -m "chore: update app-ads.txt [$(date -u '+%Y-%m-%d')]"
+            git push
+          fi
